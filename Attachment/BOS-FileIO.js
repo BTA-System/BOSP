@@ -8,8 +8,7 @@
 
     class BOSUploadDownload {
         constructor() {
-            // 上传状态
-            this._uploadStatus = '';        // 空表示未上传，'成功' 或错误信息
+            this._uploadStatus = '';
             this._uploadedFileName = '';
             this._uploadedFileExt = '';
             this._uploadedFileText = '';
@@ -22,7 +21,7 @@
                 id: 'bosuploaddownload',
                 name: 'BOS-Upload&Download',
                 blocks: [
-                    // ====== 上传部分 ======
+                    // 上传部分
                     {
                         opcode: 'selectFile',
                         blockType: Scratch.BlockType.COMMAND,
@@ -59,8 +58,7 @@
                         blockType: Scratch.BlockType.REPORTER,
                         text: '上传的文件二进制 (8位)'
                     },
-
-                    // ====== 下载部分 ======
+                    // 下载部分
                     {
                         opcode: 'exportFile',
                         blockType: Scratch.BlockType.COMMAND,
@@ -80,7 +78,7 @@
             };
         }
 
-        // ---------- 上传实现 ----------
+        // ---------- 上传 ----------
         selectFile() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -100,23 +98,19 @@
                 this._uploadedFileExt = ext;
                 this._fileSelected = true;
 
-                // 读取文件为 ArrayBuffer 以获取二进制
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const buffer = event.target.result;
                     const bytes = new Uint8Array(buffer);
 
-                    // 检测文件是否包含非 ASCII 字符（只对文本文件检测）
                     const isText = (ext === 'txt' || ext === 'bm' || ext === 'bsh' || ext === 'bmc' ||
                                     ext === 'c' || ext === 'h' || ext === 'cpp' || ext === 'js' ||
                                     ext === 'py' || ext === 'md' || ext === 'json' || ext === 'xml' ||
                                     fullName.endsWith('.bm') || fullName.endsWith('.bsh') || fullName.endsWith('.bmc'));
                     if (isText) {
-                        // 读取文本内容以检测是否包含非 ASCII
                         const textReader = new FileReader();
                         textReader.onload = (ev) => {
                             const text = ev.target.result;
-                            // 检测是否包含非 ASCII 字符（Unicode > 127）
                             if (/[^\x00-\x7F]/.test(text)) {
                                 this._uploadStatus = '文件上传失败：内容包含非 ASCII 字符（如中文）';
                                 this._uploadedFileText = '';
@@ -125,17 +119,15 @@
                                 document.body.removeChild(input);
                                 return;
                             }
-                            // 合法文本，保存内容
                             this._uploadedFileText = text;
                             this._uploadStatus = '成功';
-                            // 生成二进制（字节对齐8位）
+                            // 生成二进制（无空格，连续字符串）
                             this._uploadedFileBinary = this._bytesToBinary(bytes);
                             this._fireHat();
                             document.body.removeChild(input);
                         };
                         textReader.readAsText(file);
                     } else {
-                        // 非文本文件，直接生成二进制（不检测合法性）
                         this._uploadedFileText = '';
                         this._uploadStatus = '成功（二进制文件）';
                         this._uploadedFileBinary = this._bytesToBinary(bytes);
@@ -149,14 +141,13 @@
             input.click();
         }
 
-        // 将字节数组转换为 8 位二进制字符串，字节间空格分隔
+        // 将字节数组转换为连续的 8 位二进制字符串（无空格）
         _bytesToBinary(bytes) {
             let binaryStr = '';
             for (let i = 0; i < bytes.length; i++) {
                 const byte = bytes[i];
                 const bin8 = byte.toString(2).padStart(8, '0');
-                binaryStr += bin8;
-                if (i < bytes.length - 1) binaryStr += ' ';
+                binaryStr += bin8;  // 直接拼接，不加空格
             }
             return binaryStr;
         }
@@ -187,7 +178,7 @@
             return this._uploadedFileBinary || '';
         }
 
-        // ---------- 下载实现 ----------
+        // ---------- 下载 ----------
         exportFile(args) {
             const fileName = args.FILENAME || 'file.txt';
             const content = args.CONTENT || '';
